@@ -1192,6 +1192,7 @@
     <string name="SendingFile">sending a file...</string>
     <string name="GotAQuestion">Got a question\nabout Telegram?</string>
     <string name="ChatGallery">Gallery</string>
+    <string name="ChatBet">Bet</string>
     <string name="ChatLocation">Location</string>
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">File</string>

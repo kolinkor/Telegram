@@ -76,6 +76,9 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.betTest.HttpCallback;
+import org.telegram.betTest.PostData;
+import org.telegram.betTest.SimpleHttpClient;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ChatObject;
@@ -2306,6 +2309,41 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             if (view instanceof AttachButton) {
                 final Activity activity = lastFragment.getParentActivity();
                 int num = view.getTag() instanceof Integer ? (Integer) view.getTag() : -1;
+                if(num == 0){
+
+                    String postUrl = "https://jsonplaceholder.typicode.com/posts";
+                    PostData postData = new PostData("foo", "bar", 1);
+
+                    SimpleHttpClient.sendGet(postUrl, new HttpCallback() {
+                        @Override
+                        public void onSuccess(String result) {
+
+                            AlertDialog dialog =
+                                    new AlertDialog.Builder(baseFragment.getParentActivity(), resourcesProvider)
+                                            .setTitle("Test request to https://jsonplaceholder.typicode.com/posts")
+                                            .setMessage(result)
+                                            .setPositiveButton("Cool", null)
+                                            .setNegativeButton("Poorly", null)
+                                            .create();
+                            dialog.show();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            AlertDialog dialog =
+                                    new AlertDialog.Builder(baseFragment.getParentActivity(), resourcesProvider)
+                                            .setTitle("Test request to https://jsonplaceholder.typicode.com/posts")
+                                            .setMessage(e.getMessage())
+                                            .setPositiveButton("Good", null)
+                                            .setNegativeButton("Bad", null)
+                                            .create();
+                            dialog.show();
+                        }
+                    });
+
+                    return;
+                }
+
                 if (num == 1) {
                     if (!photosEnabled && !videosEnabled && checkCanRemoveRestrictionsByBoosts()) {
                         return;
@@ -4870,6 +4908,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         private final static int VIEW_TYPE_BUTTON = 0, VIEW_TYPE_BOT_BUTTON = 1;
 
         private Context mContext;
+        private int betButton;
         private int galleryButton;
 
         private int attachBotsStartRow;
@@ -4911,6 +4950,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             switch (holder.getItemViewType()) {
                 case VIEW_TYPE_BUTTON:
                     AttachButton attachButton = (AttachButton) holder.itemView;
+                    if(position== betButton){
+                        attachButton.setTextAndIcon(0, getString("ChatBet", R.string.ChatBet), Theme.chat_attachButtonDrawables[5], Theme.key_chat_attachPollBackground, Theme.key_chat_attachPollText);
+                        attachButton.setTag(0);
+                    }
                     if (position == galleryButton) {
                         attachButton.setTextAndIcon(1, getString("ChatGallery", R.string.ChatGallery), Theme.chat_attachButtonDrawables[0], Theme.key_chat_attachGalleryBackground, Theme.key_chat_attachGalleryText);
                         attachButton.setTag(1);
@@ -4973,6 +5016,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         @Override
         public void notifyDataSetChanged() {
             buttonsCount = 0;
+            betButton = -1;
             galleryButton = -1;
             documentButton = -1;
             musicButton = -1;
@@ -5001,6 +5045,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     musicButton = buttonsCount++;
                 }
             } else {
+                betButton = buttonsCount++;
                 galleryButton = buttonsCount++;
                 if (photosEnabled || videosEnabled) {
                     if (baseFragment instanceof ChatActivity && !((ChatActivity) baseFragment).isInScheduleMode() && !((ChatActivity) baseFragment).isSecretChat() && ((ChatActivity) baseFragment).getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
