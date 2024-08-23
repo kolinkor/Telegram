@@ -1052,6 +1052,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
         webViewContainer.setBotUser(MessagesController.getInstance(currentAccount).getUser(botId));
         webViewContainer.loadFlickerAndSettingsItem(currentAccount, botId, settingsItem);
+
         preloadShortcutBotIcon(props.botUser, currentBot);
         if (props.response != null) {
             loadFromResponse(true);
@@ -1161,6 +1162,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                     req.peer = fragment instanceof ChatActivity ? ((ChatActivity) fragment).getCurrentUser() != null ? MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentUser()) : MessagesController.getInputPeer(((ChatActivity) fragment).getCurrentChat())
                             : MessagesController.getInputPeer(props.botUser);
                     req.compact = props.compact;
+                    webViewContainer.setPeer(req.peer);
 
                     if (!TextUtils.isEmpty(props.startParam)) {
                         req.start_param = props.startParam;

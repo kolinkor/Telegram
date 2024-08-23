@@ -58,9 +58,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.telegram.betTest.UrlParser;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -96,6 +98,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -157,6 +160,9 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
     private String lastQrText;
 
     private BotBiometry biometry;
+
+    private TLRPC.InputPeer peer;
+
     public BotWebViewContainer(@NonNull Context context, Theme.ResourcesProvider resourcesProvider, int backgroundColor) {
         super(context);
         this.resourcesProvider = resourcesProvider;
@@ -400,6 +406,10 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
 
     public void setBotUser(TLRPC.User botUser) {
         this.botUser = botUser;
+    }
+
+    public void setPeer(TLRPC.InputPeer peer){
+        this.peer = peer;
     }
 
     private void runWithPermissions(String[] permissions, Consumer<Boolean> callback) {
@@ -1171,7 +1181,44 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                     if (pathFull.startsWith("/")) {
                         pathFull = pathFull.substring(1);
                     }
-                    onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true);
+
+                    Uri uri =Uri.parse("https://t.me/" + pathFull);
+                    String pathToShare = uri.getQueryParameter("url");
+
+//                    onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true);
+//                    String url = getUrlLoaded();
+//
+//                    long userId = UrlParser.GetUserIdFromUrl(url);
+
+//                                        if (params != null) {
+//                        String groupIdStr = params.get("groupId");
+
+                    long peerId = 0;
+                    if(peer!=null){
+                        if(peer.channel_id != 0) {
+                            peerId = peer.channel_id;
+                        }else if(peer.chat_id != 0){
+                            peerId = -peer.chat_id;
+                        }
+                        else if(peer.user_id!=0){
+                            peerId=peer.user_id;
+                        }
+                    }
+
+                    SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(pathToShare, peerId, null, null, null, true, new ArrayList<>(), null, null, true, 0, null, false);
+
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+
+                    delegate.onCloseRequested(null);
+                    if (wasOpenedByLinkIntent && LaunchActivity.instance != null) {
+                        Activity activity = AndroidUtilities.findActivity(getContext());
+                        if (activity == null) activity = LaunchActivity.instance;
+                        if (activity != null && !activity.isFinishing()) {
+                            activity.moveTaskToBack(true);
+                        }
+                    }
+
+
                 } catch (JSONException e) {
                     FileLog.e(e);
                 }

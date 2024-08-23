@@ -35,6 +35,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -76,6 +77,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.betTest.CustomBotMenuController;
 import org.telegram.betTest.HttpCallback;
 import org.telegram.betTest.PostData;
 import org.telegram.betTest.SimpleHttpClient;
@@ -100,6 +102,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -191,11 +194,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         return frameLayout2.getMeasuredHeight() - alphaOffset;
     }
 
-    public void showBotLayout(long id, boolean animated) {
-        showBotLayout(id, null, false, animated);
+    public void showBotLayout(long id, boolean animated, String botUrl) {
+        showBotLayout(id, null, false, animated, botUrl);
     }
 
-    public void showBotLayout(long id, String startCommand, boolean justAdded, boolean animated) {
+    public void showBotLayout(long id, String startCommand, boolean justAdded, boolean animated, String botUrl) {
         if (botAttachLayouts.get(id) == null || !Objects.equals(startCommand, botAttachLayouts.get(id).getStartCommand()) || botAttachLayouts.get(id).needReload()) {
             if (baseFragment instanceof ChatActivity) {
                 ChatAttachAlertBotWebViewLayout webViewLayout = new ChatAttachAlertBotWebViewLayout(this, getContext(), resourcesProvider);
@@ -455,7 +458,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     }
                 });
                 MessageObject replyingObject = ((ChatActivity) baseFragment).getChatActivityEnterView().getReplyingMessageObject();
-                botAttachLayouts.get(id).requestWebView(currentAccount, ((ChatActivity) baseFragment).getDialogId(), id, false, replyingObject != null ? replyingObject.messageOwner.id : 0, startCommand);
+                botAttachLayouts.get(id).requestWebView(currentAccount, ((ChatActivity) baseFragment).getDialogId(), id, false, replyingObject != null ? replyingObject.messageOwner.id : 0, startCommand, botUrl);
             }
         }
         if (botAttachLayouts.get(id) != null) {
@@ -951,7 +954,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
 
         void updateCheckedState(boolean animate) {
-            if (checked == (currentId == selectedId)) {
+              if (checked == (currentId == selectedId)) {
                 return;
             }
             checked = currentId == selectedId;
@@ -2439,6 +2442,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             } else if (view instanceof AttachBotButton) {
                 AttachBotButton button = (AttachBotButton) view;
                 if (button.attachMenuBot != null) {
+                    if (button.attachMenuBot.url != null) {
+                        Browser.openUrl(((ChatActivity) baseFragment).getContext(), Uri.parse(button.attachMenuBot.url), true, true, false, null, null);
+                        dismiss();
+                        return;
+                    }
+
                     if (button.attachMenuBot.inactive) {
                         WebAppDisclaimerAlert.show(getContext(), (allowSendMessage) -> {
                             TLRPC.TL_messages_toggleBotInAttachMenu botRequest = new TLRPC.TL_messages_toggleBotInAttachMenu();
@@ -2447,12 +2456,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             botRequest.write_allowed = true;
                             ConnectionsManager.getInstance(currentAccount).sendRequest(botRequest, (response2, error2) -> AndroidUtilities.runOnUIThread(() -> {
                                 button.attachMenuBot.inactive = button.attachMenuBot.side_menu_disclaimer_needed = false;
-                                showBotLayout(button.attachMenuBot.bot_id, true);
+                                showBotLayout(button.attachMenuBot.bot_id, true, button.attachMenuBot.url);
                                 MediaDataController.getInstance(currentAccount).updateAttachMenuBotsInCache();
                             }), ConnectionsManager.RequestFlagInvokeAfter | ConnectionsManager.RequestFlagFailOnServerErrors);
                         }, null);
                     } else {
-                        showBotLayout(button.attachMenuBot.bot_id, true);
+                        showBotLayout(button.attachMenuBot.bot_id, true, button.attachMenuBot.url);
                     }
                 } else {
                     delegate.didSelectBot(button.currentUser);
@@ -4908,7 +4917,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         private final static int VIEW_TYPE_BUTTON = 0, VIEW_TYPE_BOT_BUTTON = 1;
 
         private Context mContext;
-        private int betButton;
+//        private int betButton;
         private int galleryButton;
 
         private int attachBotsStartRow;
@@ -4950,10 +4959,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             switch (holder.getItemViewType()) {
                 case VIEW_TYPE_BUTTON:
                     AttachButton attachButton = (AttachButton) holder.itemView;
-                    if(position== betButton){
-                        attachButton.setTextAndIcon(0, getString("ChatBet", R.string.ChatBet), Theme.chat_attachButtonDrawables[5], Theme.key_chat_attachPollBackground, Theme.key_chat_attachPollText);
-                        attachButton.setTag(0);
-                    }
+//                    if(position== betButton){
+//                        attachButton.setTextAndIcon(0, getString("ChatBet", R.string.ChatBet), Theme.chat_attachButtonDrawables[5], Theme.key_chat_attachPollBackground, Theme.key_chat_attachPollText);
+//                        attachButton.setTag(0);
+//                    }
                     if (position == galleryButton) {
                         attachButton.setTextAndIcon(1, getString("ChatGallery", R.string.ChatGallery), Theme.chat_attachButtonDrawables[0], Theme.key_chat_attachGalleryBackground, Theme.key_chat_attachGalleryText);
                         attachButton.setTag(1);
@@ -5016,7 +5025,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         @Override
         public void notifyDataSetChanged() {
             buttonsCount = 0;
-            betButton = -1;
+//            betButton = -1;
             galleryButton = -1;
             documentButton = -1;
             musicButton = -1;
@@ -5045,7 +5054,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     musicButton = buttonsCount++;
                 }
             } else {
-                betButton = buttonsCount++;
+//                betButton = buttonsCount++;
                 galleryButton = buttonsCount++;
                 if (photosEnabled || videosEnabled) {
                     if (baseFragment instanceof ChatActivity && !((ChatActivity) baseFragment).isInScheduleMode() && !((ChatActivity) baseFragment).isSecretChat() && ((ChatActivity) baseFragment).getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
@@ -5059,7 +5068,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             }
                         }
 
+                        ArrayList<TLRPC.TL_attachMenuBot> customBots = CustomBotMenuController.getInstance().GetCustomBots();
+                        attachMenuBots.addAll(customBots);
+
                         buttonsCount += attachMenuBots.size();
+
                         attachBotsEndRow = buttonsCount;
                     }
                 }

@@ -466,10 +466,10 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
     }
 
     public void requestWebView(int currentAccount, long peerId, long botId, boolean silent, int replyToMsgId) {
-        requestWebView(currentAccount, peerId, botId, silent, replyToMsgId, null);
+        requestWebView(currentAccount, peerId, botId, silent, replyToMsgId, null, null);
     }
 
-    public void requestWebView(int currentAccount, long peerId, long botId, boolean silent, int replyToMsgId, String startCommand) {
+    public void requestWebView(int currentAccount, long peerId, long botId, boolean silent, int replyToMsgId, String startCommand, String url) {
         this.currentAccount = currentAccount;
         this.peerId = peerId;
         this.botId = botId;
@@ -492,6 +492,16 @@ public class ChatAttachAlertBotWebViewLayout extends ChatAttachAlert.AttachAlert
         req.bot = MessagesController.getInstance(currentAccount).getInputUser(botId);
         req.silent = silent;
         req.platform = "android";
+
+        if(url != null) {
+            req.url = url;
+            req.flags |= 2;
+            req.peer = MessagesController.getInstance(currentAccount).getInputPeer(botId);
+            this.peerId = botId;
+
+            webViewContainer.loadUrl(currentAccount, url);
+            return;
+        }
 
         if (peerId < 0) {
             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(-peerId);

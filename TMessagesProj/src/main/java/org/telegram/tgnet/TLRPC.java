@@ -73065,6 +73065,7 @@ public class TLRPC {
         public boolean side_menu_disclaimer_needed;
         public long bot_id;
         public String short_name;
+        public String url;
         public ArrayList<AttachMenuPeerType> peer_types = new ArrayList<>();
         public ArrayList<TL_attachMenuBotIcon> icons = new ArrayList<>();
 

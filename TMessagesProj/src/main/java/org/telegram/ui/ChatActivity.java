@@ -127,6 +127,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.betTest.CustomMessage;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -1612,6 +1613,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 getNotificationCenter().postNotificationName(NotificationCenter.openBoostForUsersDialog, dialog_id);
                 return;
             }
+
+            if(view instanceof CustomMessage && ((CustomMessage) view).getMessageObject() != null){
+                CustomMessage customMessage = (CustomMessage)view;
+                customMessage.openBotFromMessage();
+                return;
+            }
+
             if (view instanceof ChatActionCell && ((ChatActionCell) view).getMessageObject() != null && ((ChatActionCell) view).getMessageObject().messageOwner.action instanceof TLRPC.TL_messageActionSetSameChatWallPaper) {
                 int messageId = ((ChatActionCell) view).getMessageObject().getReplyMsgId();
                 AndroidUtilities.runOnUIThread(() -> {
@@ -24831,7 +24839,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         openAttachMenu();
         createChatAttachView();
         if (chatAttachAlert != null) {
-            chatAttachAlert.showBotLayout(botId, startCommand, justAdded, false);
+            chatAttachAlert.showBotLayout(botId, startCommand, justAdded, false, null);
         }
     }
 
@@ -33587,6 +33595,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             } else if (viewType == 4) {
                 view = new ChatLoadingCell(mContext, contentView, themeDelegate);
             }
+            else if(viewType == 5){
+                view = new CustomMessage(mContext);
+            }
+
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
         }
@@ -33628,6 +33640,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                 MessageObject message = messages.get(position - messagesStartRow);
                 View view = holder.itemView;
+
+                if(view instanceof CustomMessage){
+                    CustomMessage customMessage =(CustomMessage) view;
+                    customMessage.setIsMine(message.isOutOwner());
+                    customMessage.setMessageObject(message);
+                }
 
                 if (view instanceof ChatMessageCell) {
                     final ChatMessageCell messageCell = (ChatMessageCell) view;
@@ -34093,10 +34111,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     messages = ChatActivity.this.messages;
                 }
-                return messages.get(position - messagesStartRow).contentType;
+
+                MessageObject message = messages.get(position - messagesStartRow);
+
+                if(message.messageText.toString().startsWith("https://t.me/TonOfMemesBot/app")){
+                    return 5;
+                }
+                //https://t.me/TonOfMemesBot/app?startapp=u430b7838-a299-4466-8fe1-48c2aaa5ed6e
+
+                return message.contentType;
             } else if (position == botInfoRow) {
                 return 3;
             }
+
             return 4;
         }
 
