@@ -1182,16 +1182,14 @@ public abstract class BotWebViewContainer extends FrameLayout implements Notific
                         pathFull = pathFull.substring(1);
                     }
 
+                    if(!pathFull.contains("TonOfMemesBot"))
+                    {
+                        onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true);
+                        break;
+                    }
+
                     Uri uri =Uri.parse("https://t.me/" + pathFull);
                     String pathToShare = uri.getQueryParameter("url");
-
-//                    onOpenUri(Uri.parse("https://t.me/" + pathFull), null, false, true);
-//                    String url = getUrlLoaded();
-//
-//                    long userId = UrlParser.GetUserIdFromUrl(url);
-
-//                                        if (params != null) {
-//                        String groupIdStr = params.get("groupId");
 
                     long peerId = 0;
                     if(peer!=null){

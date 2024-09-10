@@ -60,4 +60,9 @@ public class UrlParser {
 
         return 0;
     }
+
+    public static String GetTgWebAppData(String urlString){
+        Map<String, String> params = getParametersFromURL(urlString);
+        return params.get("tgWebAppData");
+    }
 }

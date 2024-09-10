@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,18 +46,25 @@ public class SimpleHttpClient {
         });
     }
 
-    public static void sendPost(String url, Object postData, HttpCallback callback) {
+    public static void sendPost(String url, Object postData, String tma, HttpCallback callback) {
         executorService.execute(() -> {
             try {
+
                 URL obj = new URL(url);
                 HttpURLConnection con = (HttpURLConnection) obj.openConnection();
                 con.setRequestMethod("POST");
                 con.setRequestProperty("User-Agent", USER_AGENT);
                 con.setRequestProperty("Content-Type", "application/json");
+                con.setRequestProperty("Accept", "application/json");
+                if(tma != null)
+                    con.setRequestProperty("Authorization", "tma "+tma);
 
                 con.setDoOutput(true);
+
+                String json = gson.toJson(postData);
+
                 OutputStream os = con.getOutputStream();
-                os.write(gson.toJson(postData).getBytes());
+                os.write(json.getBytes("utf-8"));
                 os.flush();
                 os.close();
 
@@ -72,7 +80,15 @@ public class SimpleHttpClient {
                     in.close();
                     mainHandler.post(() -> callback.onSuccess(response.toString()));
                 } else {
-                    throw new Exception("POST request not worked");
+                    BufferedReader in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+                    mainHandler.post(() -> callback.onError(new Exception(response.toString()) ));
                 }
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
